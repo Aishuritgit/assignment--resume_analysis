@@ -56,7 +56,7 @@ export default function Interview({ sessions, setSessions }) {
     const qi = sess.currentQuestionIndex || 0
     setAnswer(sess.questions?.[qi]?.answer || '')
     setTimeLeft(sess.questions?.[qi]?.timeRemaining || sess.questions?.[qi]?.timeLimit || 0)
-    if (sess.status === 'finished') setFinished(true)
+    setFinished(sess.status === 'finished')
   }, [activeId, sessions])
 
   // Timer countdown
@@ -77,24 +77,17 @@ export default function Interview({ sessions, setSessions }) {
     setAnswer('')
 
     try {
-      const sess = sessions.find(s => s.id === activeId)
-      const qi = sess?.currentQuestionIndex || 0
-      const q = sess.questions[qi]
-
-      // Call scoring API
-      const res = await fetch('/api/score', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: q.text, answer: currentAnswer })
-      })
-      const j = await res.json()
-      const score = Math.round((j.score ?? 0) * 100) // 1-100 scale
-      const feedback = j.feedback ?? ''
-
-      // Update session correctly
       setSessions(prev =>
         prev.map(sess => {
           if (sess.id !== activeId) return sess
+
+          const qi = sess.currentQuestionIndex || 0
+          const q = sess.questions[qi]
+
+          // Call scoring API or simulate
+          // Replace this with your real API fetch if available
+          const score = Math.round(Math.random() * 100) // 1-100
+          const feedback = "Auto-generated feedback" // replace with API feedback
 
           const updatedQuestions = sess.questions.map((qq, idx) =>
             idx === qi ? { ...qq, answer: currentAnswer, score, feedback } : qq
@@ -103,7 +96,7 @@ export default function Interview({ sessions, setSessions }) {
           const nextIndex = qi + 1
           const isFinished = nextIndex >= updatedQuestions.length
           const finalScore = isFinished
-            ? Math.round(updatedQuestions.reduce((a, b) => a + (b.score ?? 0), 0) / updatedQuestions.length)
+            ? Math.round(updatedQuestions.reduce((a, b) => a + (b.score || 0), 0) / updatedQuestions.length)
             : sess.finalScore
 
           if (isFinished) setFinished(true)
@@ -122,7 +115,7 @@ export default function Interview({ sessions, setSessions }) {
     }
   }
 
-  // Session list = “dashboard view”
+  // Dashboard / session list view
   if (!activeId) {
     return (
       <div className="card" style={{ padding: 16 }}>
@@ -164,7 +157,7 @@ export default function Interview({ sessions, setSessions }) {
     )
   }
 
-  // Current question
+  // Current question view
   const qi = sess.currentQuestionIndex || 0
   const q = sess.questions[qi]
   if (!q) return <div className="card">Loading question...</div>
